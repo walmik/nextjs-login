@@ -1,0 +1,39 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: paypal
+service: nextjs-login
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    # Use the CloudFront domain if provided, otherwise use the API Gateway URL
+    NEXTAUTH_URL: ${opt:domain,
+      !Join
+      - ''
+      - - 'https://'
+      - !Ref ApiGatewayRestApi
+      - '.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
+      }
+    NEXTAUTH_SECRET: ${env:NEXTAUTH_SECRET, 'your-default-secret-key'}
+
+plugins:
+  - '@sls-next/serverless-component'
+
+custom:
+  # Replace with your own domain if you have one
+  domain: ${opt:domain, ''}
+  nextjs:
+    # Configure the deployment options
+    build:
+      cwd: ./
+    distribution:
+      # Disable CloudFront for cost-saving since this is just a POC
+      enabled: false
+      compress: false
+      cachePolicies:
+        default:
+          minTTL: 60
+          defaultTTL: 3600
+          maxTTL: 86400
